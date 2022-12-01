@@ -2,6 +2,12 @@
 
 Implementation of the [graphql-ws protocoll](https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md) in go. It uses the subprotocol `graphql-transport-ws`. This library is currently designed for use with [fiber](https://github.com/gofiber/fiber).
 
+## Installation
+
+```shell
+go get -u github.com/fraym/graphqlws
+```
+
 ## Usage
 
 ### Instantiate the handler
