@@ -1,4 +1,4 @@
-module github.com/fraym/graphqlws
+module github.com/fraym/graphql-ws-go
 
 go 1.19
 
