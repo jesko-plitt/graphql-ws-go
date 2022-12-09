@@ -1,3 +1,7 @@
+# v0.1.2
+
+- (bug) Do not send data on closed connections
+
 # v0.1.1
 
 - (bug) Fix module

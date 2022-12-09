@@ -20,6 +20,7 @@ type Connection struct {
 	logger Logger
 
 	isInit     bool
+	isEnded    bool
 	operations map[string]Subscription
 }
 
@@ -31,18 +32,27 @@ func NewConnection(config *Config, ws *websocket.Conn, schema *graphql.Schema, l
 		schema:     schema,
 		logger:     logger,
 		isInit:     false,
+		isEnded:    false,
 		operations: make(map[string]Subscription),
 	}
 }
 
 func (c *Connection) Run() {
-	defer c.ws.Close()
+	defer c.Close()
 
 	if err := c.runReceiver(); err != nil {
 		if fasthttpWebsocket.IsUnexpectedCloseError(err, fasthttpWebsocket.CloseNormalClosure, fasthttpWebsocket.CloseGoingAway) {
 			c.logger.Error(err)
 		}
 	}
+}
+
+func (c *Connection) Close() {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	c.isEnded = true
+	c.ws.Close()
 }
 
 func (c *Connection) runReceiver() error {
@@ -56,8 +66,6 @@ func (c *Connection) runReceiver() error {
 	})
 
 	go func() {
-		defer c.ws.Close()
-
 		select {
 		case <-ctx.Done():
 			return
@@ -110,12 +118,6 @@ func (c *Connection) runReceiver() error {
 			return c.sendInvalidType(t)
 		}
 	}
-}
-
-func (c *Connection) onPing() error {
-	return c.ws.WriteJSON(fiber.Map{
-		"type": "pong",
-	})
 }
 
 func (c *Connection) onInit(initDone context.CancelFunc) error {
@@ -187,7 +189,28 @@ func (c *Connection) isInitialized() bool {
 	return c.isInit
 }
 
+func (c *Connection) isClosed() bool {
+	c.mx.RLock()
+	defer c.mx.RUnlock()
+
+	return c.isEnded
+}
+
+func (c *Connection) onPing() error {
+	if c.isClosed() {
+		return nil
+	}
+
+	return c.ws.WriteJSON(fiber.Map{
+		"type": "pong",
+	})
+}
+
 func (c *Connection) sendResult(id string, result *graphql.Result) error {
+	if c.isClosed() {
+		return nil
+	}
+
 	if result.HasErrors() {
 		return c.ws.WriteJSON(fiber.Map{
 			"id":      id,
@@ -204,6 +227,10 @@ func (c *Connection) sendResult(id string, result *graphql.Result) error {
 }
 
 func (c *Connection) sendComplete(id string) error {
+	if c.isClosed() {
+		return nil
+	}
+
 	return c.ws.WriteJSON(fiber.Map{
 		"id":   id,
 		"type": "complete",
@@ -211,18 +238,30 @@ func (c *Connection) sendComplete(id string) error {
 }
 
 func (c *Connection) sendPing() error {
+	if c.isClosed() {
+		return nil
+	}
+
 	return c.ws.WriteJSON(fiber.Map{
 		"type": "ping",
 	})
 }
 
 func (c *Connection) sendConnectionAck() error {
+	if c.isClosed() {
+		return nil
+	}
+
 	return c.ws.WriteJSON(fiber.Map{
 		"type": "connection_ack",
 	})
 }
 
 func (c *Connection) sendInitTimeout() error {
+	if c.isClosed() {
+		return nil
+	}
+
 	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
 		4408,
 		"Connection initialisation timeout",
@@ -230,6 +269,10 @@ func (c *Connection) sendInitTimeout() error {
 }
 
 func (c *Connection) sendTooManyInitRequests() error {
+	if c.isClosed() {
+		return nil
+	}
+
 	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
 		4429,
 		"Too many initialisation requests",
@@ -237,6 +280,10 @@ func (c *Connection) sendTooManyInitRequests() error {
 }
 
 func (c *Connection) sendUnauthorized() error {
+	if c.isClosed() {
+		return nil
+	}
+
 	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
 		4401,
 		"Unauthorized",
@@ -244,6 +291,10 @@ func (c *Connection) sendUnauthorized() error {
 }
 
 func (c *Connection) sendSubscriberAlreadyExists(id string) error {
+	if c.isClosed() {
+		return nil
+	}
+
 	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
 		4409,
 		fmt.Sprintf("Subscriber for %s already exists", id),
@@ -251,6 +302,10 @@ func (c *Connection) sendSubscriberAlreadyExists(id string) error {
 }
 
 func (c *Connection) sendInvalidType(t string) error {
+	if c.isClosed() {
+		return nil
+	}
+
 	c.logger.Error("unknown message type %s", t)
 	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
 		4400,
