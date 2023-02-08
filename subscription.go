@@ -19,16 +19,18 @@ func NewSubscription(
 	schema *graphql.Schema,
 	id string,
 	payload map[string]any,
+	params map[string]any,
 ) (*Subscription, error) {
-	operation, err := getSubscriptionOperation(ctx, schema, payload)
+	subscriptionCtx := context.WithValue(ctx, ConnectionParams{}, params)
+	operation, err := getSubscriptionOperation(subscriptionCtx, schema, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	subscriptionCtx, cancelSubscription := context.WithCancel(ctx)
+	subscriptionCtxWithCancel, cancelSubscription := context.WithCancel(subscriptionCtx)
 
 	return &Subscription{
-		ctx:       subscriptionCtx,
+		ctx:       subscriptionCtxWithCancel,
 		cancel:    cancelSubscription,
 		id:        id,
 		operation: operation,

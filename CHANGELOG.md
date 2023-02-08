@@ -1,3 +1,7 @@
+# v0.2.0
+
+- (feature) Add connection params to subscription context
+
 # v0.1.2
 
 - (bug) Do not send data on closed connections

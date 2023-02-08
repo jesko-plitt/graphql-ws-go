@@ -12,6 +12,8 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
+type ConnectionParams struct{}
+
 type Connection struct {
 	mx     sync.RWMutex
 	config *Config
@@ -22,6 +24,7 @@ type Connection struct {
 	isInit     bool
 	isEnded    bool
 	operations map[string]Subscription
+	params     map[string]any
 }
 
 func NewConnection(config *Config, ws *websocket.Conn, schema *graphql.Schema, logger Logger) *Connection {
@@ -33,7 +36,8 @@ func NewConnection(config *Config, ws *websocket.Conn, schema *graphql.Schema, l
 		logger:     logger,
 		isInit:     false,
 		isEnded:    false,
-		operations: make(map[string]Subscription),
+		operations: map[string]Subscription{},
+		params:     map[string]any{},
 	}
 }
 
@@ -103,7 +107,7 @@ func (c *Connection) runReceiver() error {
 		case "pong":
 			pinger.OnPong()
 		case "connection_init":
-			if err := c.onInit(initDone); err != nil {
+			if err := c.onInit(initDone, data); err != nil {
 				return err
 			}
 		case "subscribe":
@@ -120,12 +124,13 @@ func (c *Connection) runReceiver() error {
 	}
 }
 
-func (c *Connection) onInit(initDone context.CancelFunc) error {
+func (c *Connection) onInit(initDone context.CancelFunc, data map[string]any) error {
 	if c.isInitialized() {
 		return c.sendTooManyInitRequests()
 	}
 
 	c.mx.Lock()
+	c.params = data
 	c.isInit = true
 	c.mx.Unlock()
 
@@ -156,7 +161,7 @@ func (c *Connection) onSubscribe(ctx context.Context, data map[string]any) error
 		return fmt.Errorf("data does not contain a valid `payload` field")
 	}
 
-	subscription, err := NewSubscription(ctx, c.schema, id, payload)
+	subscription, err := NewSubscription(ctx, c.schema, id, payload, c.params)
 	if err != nil {
 		return err
 	}
