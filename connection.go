@@ -130,7 +130,11 @@ func (c *Connection) onInit(initDone context.CancelFunc, data map[string]any) er
 	}
 
 	c.mx.Lock()
-	c.params = data
+	payload, ok := data["payload"].(map[string]any)
+	if ok {
+		c.params = payload
+	}
+
 	c.isInit = true
 	c.mx.Unlock()
 

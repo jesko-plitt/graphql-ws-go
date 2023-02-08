@@ -1,3 +1,7 @@
+# v0.2.1
+
+- (bug) Properly set connection params to subscription context
+
 # v0.2.0
 
 - (feature) Add connection params to subscription context
