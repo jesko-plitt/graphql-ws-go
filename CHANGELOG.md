@@ -1,3 +1,7 @@
+# v0.3.0
+
+- (bc) Use golog as logging interface
+
 # v0.2.1
 
 - (bug) Properly set connection params to subscription context

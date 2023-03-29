@@ -1,6 +1,7 @@
 package graphqlws
 
 import (
+	"github.com/fraym/golog"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/graphql-go/graphql"
@@ -8,11 +9,11 @@ import (
 
 type SubscriptionHandler struct {
 	config *Config
-	logger Logger
+	logger golog.Logger
 }
 
 func NewSubscriptionHandler(
-	logger Logger,
+	logger golog.Logger,
 	config *Config,
 ) *SubscriptionHandler {
 	if config == nil {

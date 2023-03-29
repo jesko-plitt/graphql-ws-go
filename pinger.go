@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"github.com/fraym/golog"
 )
 
 type Pinger struct {
@@ -13,7 +15,7 @@ type Pinger struct {
 	timeout   time.Duration
 	ping      PingFn
 	onTimeout OnTimeoutFn
-	logger    Logger
+	logger    golog.Logger
 
 	pong context.CancelFunc
 }
@@ -22,7 +24,7 @@ type PingFn func() error
 
 type OnTimeoutFn func()
 
-func NewPinger(ctx context.Context, cancel context.CancelFunc, interval time.Duration, timeout time.Duration, logger Logger, ping PingFn) *Pinger {
+func NewPinger(ctx context.Context, cancel context.CancelFunc, interval time.Duration, timeout time.Duration, logger golog.Logger, ping PingFn) *Pinger {
 	p := &Pinger{
 		mx:        sync.Mutex{},
 		ctx:       ctx,
@@ -82,7 +84,7 @@ func sendPingAndAwaitPong(p *Pinger) error {
 
 	go func(p *Pinger) {
 		if err := p.ping(); err != nil {
-			p.logger.Error(err)
+			p.logger.Error().WithError(err).Write()
 		}
 	}(p)
 

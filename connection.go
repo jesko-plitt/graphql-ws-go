@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	fasthttpWebsocket "github.com/fasthttp/websocket"
+	"github.com/fraym/golog"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/graphql-go/graphql"
@@ -19,7 +20,7 @@ type Connection struct {
 	config *Config
 	ws     *websocket.Conn
 	schema *graphql.Schema
-	logger Logger
+	logger golog.Logger
 
 	isInit     bool
 	isEnded    bool
@@ -27,7 +28,7 @@ type Connection struct {
 	params     map[string]any
 }
 
-func NewConnection(config *Config, ws *websocket.Conn, schema *graphql.Schema, logger Logger) *Connection {
+func NewConnection(config *Config, ws *websocket.Conn, schema *graphql.Schema, logger golog.Logger) *Connection {
 	return &Connection{
 		mx:         sync.RWMutex{},
 		config:     config,
@@ -46,7 +47,7 @@ func (c *Connection) Run() {
 
 	if err := c.runReceiver(); err != nil {
 		if fasthttpWebsocket.IsUnexpectedCloseError(err, fasthttpWebsocket.CloseNormalClosure, fasthttpWebsocket.CloseGoingAway) {
-			c.logger.Error(err)
+			c.logger.Error().WithError(err).Write()
 		}
 	}
 }
@@ -315,7 +316,7 @@ func (c *Connection) sendInvalidType(t string) error {
 		return nil
 	}
 
-	c.logger.Error("unknown message type %s", t)
+	c.logger.Error().Writef("unknown message type %s", t)
 	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
 		4400,
 		fmt.Sprintf("unknown message type %s", t),

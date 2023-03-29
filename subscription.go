@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/fraym/golog"
 	"github.com/graphql-go/graphql"
 )
 
@@ -40,7 +41,7 @@ func NewSubscription(
 type SendComplete func(id string) error
 type SendResult func(id string, result *graphql.Result) error
 
-func (s *Subscription) Run(sendResult SendResult, sendComplete SendComplete, logger Logger) {
+func (s *Subscription) Run(sendResult SendResult, sendComplete SendComplete, logger golog.Logger) {
 	resultChannel := graphql.Subscribe(*s.operation)
 
 	for {
@@ -50,13 +51,13 @@ func (s *Subscription) Run(sendResult SendResult, sendComplete SendComplete, log
 		case result, ok := <-resultChannel:
 			if !ok {
 				if err := sendComplete(s.id); err != nil {
-					logger.Error(err)
+					logger.Error().WithError(err).Write()
 				}
 				return
 			}
 
 			if err := sendResult(s.id, result); err != nil {
-				logger.Error(err)
+				logger.Error().WithError(err).Write()
 				return
 			}
 		}
