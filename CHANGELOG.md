@@ -1,3 +1,7 @@
+# v0.3.1
+
+- (bug) Fix concurrent write to websocket connection
+
 # v0.3.0
 
 - (bc) Use golog as logging interface

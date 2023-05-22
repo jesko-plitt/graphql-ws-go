@@ -16,11 +16,12 @@ import (
 type ConnectionParams struct{}
 
 type Connection struct {
-	mx     sync.RWMutex
-	config *Config
-	ws     *websocket.Conn
-	schema *graphql.Schema
-	logger golog.Logger
+	mx        sync.RWMutex
+	config    *Config
+	ws        *websocket.Conn
+	wsWriteMx sync.Mutex
+	schema    *graphql.Schema
+	logger    golog.Logger
 
 	isInit     bool
 	isEnded    bool
@@ -33,6 +34,7 @@ func NewConnection(config *Config, ws *websocket.Conn, schema *graphql.Schema, l
 		mx:         sync.RWMutex{},
 		config:     config,
 		ws:         ws,
+		wsWriteMx:  sync.Mutex{},
 		schema:     schema,
 		logger:     logger,
 		isInit:     false,
@@ -211,7 +213,7 @@ func (c *Connection) onPing() error {
 		return nil
 	}
 
-	return c.ws.WriteJSON(fiber.Map{
+	return c.writeJson(fiber.Map{
 		"type": "pong",
 	})
 }
@@ -222,14 +224,14 @@ func (c *Connection) sendResult(id string, result *graphql.Result) error {
 	}
 
 	if result.HasErrors() {
-		return c.ws.WriteJSON(fiber.Map{
+		return c.writeJson(fiber.Map{
 			"id":      id,
 			"type":    "error",
 			"payload": result.Errors,
 		})
 	}
 
-	return c.ws.WriteJSON(fiber.Map{
+	return c.writeJson(fiber.Map{
 		"id":      id,
 		"type":    "next",
 		"payload": result.Data,
@@ -241,7 +243,7 @@ func (c *Connection) sendComplete(id string) error {
 		return nil
 	}
 
-	return c.ws.WriteJSON(fiber.Map{
+	return c.writeJson(fiber.Map{
 		"id":   id,
 		"type": "complete",
 	})
@@ -252,7 +254,7 @@ func (c *Connection) sendPing() error {
 		return nil
 	}
 
-	return c.ws.WriteJSON(fiber.Map{
+	return c.writeJson(fiber.Map{
 		"type": "ping",
 	})
 }
@@ -262,7 +264,7 @@ func (c *Connection) sendConnectionAck() error {
 		return nil
 	}
 
-	return c.ws.WriteJSON(fiber.Map{
+	return c.writeJson(fiber.Map{
 		"type": "connection_ack",
 	})
 }
@@ -272,10 +274,10 @@ func (c *Connection) sendInitTimeout() error {
 		return nil
 	}
 
-	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
+	return c.writeCloseMessage(
 		4408,
 		"Connection initialisation timeout",
-	))
+	)
 }
 
 func (c *Connection) sendTooManyInitRequests() error {
@@ -283,10 +285,10 @@ func (c *Connection) sendTooManyInitRequests() error {
 		return nil
 	}
 
-	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
+	return c.writeCloseMessage(
 		4429,
 		"Too many initialisation requests",
-	))
+	)
 }
 
 func (c *Connection) sendUnauthorized() error {
@@ -294,10 +296,10 @@ func (c *Connection) sendUnauthorized() error {
 		return nil
 	}
 
-	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
+	return c.writeCloseMessage(
 		4401,
 		"Unauthorized",
-	))
+	)
 }
 
 func (c *Connection) sendSubscriberAlreadyExists(id string) error {
@@ -305,10 +307,10 @@ func (c *Connection) sendSubscriberAlreadyExists(id string) error {
 		return nil
 	}
 
-	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
+	return c.writeCloseMessage(
 		4409,
 		fmt.Sprintf("Subscriber for %s already exists", id),
-	))
+	)
 }
 
 func (c *Connection) sendInvalidType(t string) error {
@@ -317,8 +319,25 @@ func (c *Connection) sendInvalidType(t string) error {
 	}
 
 	c.logger.Error().Writef("unknown message type %s", t)
-	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
+	return c.writeCloseMessage(
 		4400,
 		fmt.Sprintf("unknown message type %s", t),
+	)
+}
+
+func (c *Connection) writeJson(data any) error {
+	c.wsWriteMx.Lock()
+	defer c.wsWriteMx.Unlock()
+
+	return c.ws.WriteJSON(data)
+}
+
+func (c *Connection) writeCloseMessage(code int, text string) error {
+	c.wsWriteMx.Lock()
+	defer c.wsWriteMx.Unlock()
+
+	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
+		code,
+		text,
 	))
 }
