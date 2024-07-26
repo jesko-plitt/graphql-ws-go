@@ -50,7 +50,12 @@ func (c *Connection) Run() {
 	defer c.Close()
 
 	if err := c.runReceiver(); err != nil {
-		if fasthttpWebsocket.IsUnexpectedCloseError(err, fasthttpWebsocket.CloseNormalClosure, fasthttpWebsocket.CloseGoingAway) {
+		if fasthttpWebsocket.IsUnexpectedCloseError(
+			err,
+			fasthttpWebsocket.CloseNormalClosure,
+			fasthttpWebsocket.CloseGoingAway,
+			fasthttpWebsocket.CloseAbnormalClosure,
+		) {
 			c.logger.Error().WithError(err).Write()
 		}
 	}

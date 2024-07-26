@@ -1,3 +1,7 @@
+# v0.3.3
+
+- (improvement) Improve error logging
+
 # v0.3.2
 
 - (bug) Fix nil pointer on missing websocket connection
