@@ -8,10 +8,12 @@ import (
 
 	fasthttpWebsocket "github.com/fasthttp/websocket"
 	"github.com/fraym/golog"
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/websocket/v2"
 	"github.com/graphql-go/graphql"
 )
+
+var ErrWebsocketClosed = fmt.Errorf("websocket closed")
 
 type ConnectionParams struct{}
 
@@ -59,7 +61,10 @@ func (c *Connection) Close() {
 	defer c.mx.Unlock()
 
 	c.isEnded = true
-	c.ws.Close()
+
+	if c.ws == nil || c.ws.Conn == nil {
+		_ = c.ws.Close()
+	}
 }
 
 func (c *Connection) runReceiver() error {
@@ -329,12 +334,22 @@ func (c *Connection) writeJson(data any) error {
 	c.wsWriteMx.Lock()
 	defer c.wsWriteMx.Unlock()
 
+	if c.ws == nil || c.ws.Conn == nil {
+		c.Close()
+		return ErrWebsocketClosed
+	}
+
 	return c.ws.WriteJSON(data)
 }
 
 func (c *Connection) writeCloseMessage(code int, text string) error {
 	c.wsWriteMx.Lock()
 	defer c.wsWriteMx.Unlock()
+
+	if c.ws == nil || c.ws.Conn == nil {
+		c.Close()
+		return ErrWebsocketClosed
+	}
 
 	return c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
 		code,

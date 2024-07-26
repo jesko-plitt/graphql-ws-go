@@ -1,3 +1,7 @@
+# v0.3.2
+
+- (bug) Fix nil pointer on missing websocket connection
+
 # v0.3.1
 
 - (bug) Fix concurrent write to websocket connection
