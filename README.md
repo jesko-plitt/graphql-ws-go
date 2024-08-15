@@ -5,7 +5,7 @@ Implementation of the [graphql-ws protocoll](https://github.com/enisdenjo/graphq
 ## Installation
 
 ```shell
-go get -u github.com/fraym/graphqlws
+go get -u github.com/fraym/graphql-ws-go
 ```
 
 ## Usage

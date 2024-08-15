@@ -1,13 +1,15 @@
 module github.com/fraym/graphql-ws-go
 
-go 1.19
+go 1.22
+
+toolchain go1.22.6
 
 require (
 	github.com/fasthttp/websocket v1.5.10
 	github.com/fraym/golog v0.2.2
+	github.com/fraym/graphql-go v0.1.0
 	github.com/gofiber/contrib/websocket v1.3.2
 	github.com/gofiber/fiber/v2 v2.52.5
-	github.com/graphql-go/graphql v0.8.1
 )
 
 require (

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/fraym/golog"
-	"github.com/graphql-go/graphql"
+	graphql "github.com/fraym/graphql-go"
 )
 
 type Subscription struct {
@@ -38,8 +38,10 @@ func NewSubscription(
 	}, nil
 }
 
-type SendComplete func(id string) error
-type SendResult func(id string, result *graphql.Result) error
+type (
+	SendComplete func(id string) error
+	SendResult   func(id string, result *graphql.Result) error
+)
 
 func (s *Subscription) Run(sendResult SendResult, sendComplete SendComplete, logger golog.Logger) {
 	resultChannel := graphql.Subscribe(*s.operation)

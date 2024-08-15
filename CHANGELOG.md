@@ -1,3 +1,7 @@
+# v0.4.0
+
+- (bc) Use fraym/graphql-go instead of graphql-go/graphql
+
 # v0.3.3
 
 - (improvement) Improve error logging
