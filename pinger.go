@@ -24,7 +24,14 @@ type PingFn func() error
 
 type OnTimeoutFn func()
 
-func NewPinger(ctx context.Context, cancel context.CancelFunc, interval time.Duration, timeout time.Duration, logger golog.Logger, ping PingFn) *Pinger {
+func NewPinger(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	interval time.Duration,
+	timeout time.Duration,
+	logger golog.Logger,
+	ping PingFn,
+) *Pinger {
 	p := &Pinger{
 		mx:        sync.Mutex{},
 		ctx:       ctx,

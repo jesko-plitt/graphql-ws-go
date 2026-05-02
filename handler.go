@@ -2,9 +2,9 @@ package graphqlws
 
 import (
 	"github.com/fraym/golog"
-	graphql "github.com/fraym/graphql-go"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	graphql "github.com/jesko-plitt/graphql-go"
 )
 
 type SubscriptionHandler struct {

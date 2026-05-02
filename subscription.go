@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/fraym/golog"
-	graphql "github.com/fraym/graphql-go"
+	graphql "github.com/jesko-plitt/graphql-go"
 )
 
 type Subscription struct {
