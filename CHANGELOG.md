@@ -1,3 +1,7 @@
+# v1.2.0
+
+- (feature) Add `HandleWithCtx()` to `SubscriptionHandler`
+
 # v1.1.0
 
 - (feature) Add `RunWithCtx()` to `Connection`
