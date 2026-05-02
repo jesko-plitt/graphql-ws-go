@@ -49,7 +49,22 @@ func NewConnection(config *Config, ws *websocket.Conn, schema *graphql.Schema, l
 func (c *Connection) Run() {
 	defer c.Close()
 
-	if err := c.runReceiver(); err != nil {
+	if err := c.runReceiver(context.Background()); err != nil {
+		if fasthttpWebsocket.IsUnexpectedCloseError(
+			err,
+			fasthttpWebsocket.CloseNormalClosure,
+			fasthttpWebsocket.CloseGoingAway,
+			fasthttpWebsocket.CloseAbnormalClosure,
+		) {
+			c.logger.Error().WithError(err).Write()
+		}
+	}
+}
+
+func (c *Connection) RunWithCtx(ctx context.Context) {
+	defer c.Close()
+
+	if err := c.runReceiver(ctx); err != nil {
 		if fasthttpWebsocket.IsUnexpectedCloseError(
 			err,
 			fasthttpWebsocket.CloseNormalClosure,
@@ -72,10 +87,10 @@ func (c *Connection) Close() {
 	}
 }
 
-func (c *Connection) runReceiver() error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (c *Connection) runReceiver(baseCtx context.Context) error {
+	ctx, cancel := context.WithCancel(baseCtx)
 	defer cancel()
-	initCtx, initDone := context.WithTimeout(context.Background(), c.config.ConnectionInitWaitTimeout)
+	initCtx, initDone := context.WithTimeout(baseCtx, c.config.ConnectionInitWaitTimeout)
 	defer initDone()
 
 	pinger := NewPinger(ctx, cancel, c.config.PingInterval, c.config.PingTimeout, c.logger, func() error {
